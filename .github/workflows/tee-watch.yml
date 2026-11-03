@@ -1,0 +1,33 @@
+name: tee-watch
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: tee-watch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - run: python tee_watch.py
+        env:
+          TIMES_URL: ${{ secrets.TIMES_URL }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          FOREUP_COOKIE: ${{ secrets.FOREUP_COOKIE }}
+          DAYS_AHEAD: "14"
+          WEEKENDS_ONLY: "false"
+          EARLIEST: "06:00"
+          LATEST: "14:00"
+          MIN_SPOTS: "2"
+      - name: Save seen times
+        run: |
+          git config user.name "tee-bot"
+          git config user.email "tee-bot@users.noreply.github.com"
+          git add seen.json || true
+          git diff --cached --quiet || (git commit -m "update seen times" && git push)
